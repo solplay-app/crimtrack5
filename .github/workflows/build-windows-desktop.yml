@@ -5,10 +5,11 @@ name: Build Windows Desktop App
 # - automatique sur un tag "vX.Y.Z" poussé sur le repo, pratique pour
 #   publier une version numérotée sans y penser.
 #
-# Hypothèse de structure du repo (à ajuster si votre arborescence diffère) :
-#   /backend    -> crimtrack-backend (FastAPI)
-#   /frontend   -> crimtrack-frontend (HTML/JS statique)
-#   /desktop    -> crimtrack-desktop (Electron), ce dossier
+# Mode "toujours en ligne" (desktop/electron/main.js charge directement
+# l'URL Railway) : plus besoin de compiler un backend Python embarqué ni
+# de copier le frontend statique, contrairement à la version précédente
+# de ce workflow — juste Electron + electron-builder.
+
 on:
   workflow_dispatch:
   push:
@@ -21,34 +22,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Installer Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Installer les dépendances backend
-        working-directory: backend
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pyinstaller
-
-      - name: Compiler le backend en exécutable (PyInstaller)
-        working-directory: backend
-        run: |
-          pyinstaller --onefile --name crimtrack-backend `
-            --collect-all pytesseract `
-            --collect-all cv2 `
-            --hidden-import passlib.handlers.bcrypt `
-            run_desktop.py
-
-      - name: Préparer les ressources pour Electron
-        run: |
-          New-Item -ItemType Directory -Force -Path desktop/resources/backend
-          New-Item -ItemType Directory -Force -Path desktop/resources/frontend
-          Copy-Item backend/dist/crimtrack-backend.exe desktop/resources/backend/
-          Copy-Item -Recurse frontend/* desktop/resources/frontend/
 
       - name: Installer Node.js
         uses: actions/setup-node@v4
