@@ -1,0 +1,86 @@
+name: Build Android Mobile App
+
+# Construit l'app mobile (Expo / React Native) pour Android.
+#
+# On passe par EAS Build (service cloud d'Expo) plutôt que de faire tourner
+# Gradle/Android SDK/NDK directement dans le runner GitHub : react-native-maps
+# et les autres modules natifs rendent un build 100% "maison" fragile et
+# lent à maintenir (versions de SDK/NDK, licences Android à accepter, cache
+# Gradle...). EAS s'en charge, GitHub Actions se contente de déclencher le
+# build et de récupérer l'APK/AAB résultant comme artefact — cohérent avec
+# le workflow desktop (build-windows-desktop.yml) qui publie lui aussi un
+# artefact téléchargeable + une Release sur tag.
+#
+# Prérequis, à faire une seule fois avant que ce workflow fonctionne :
+#   1. `cd mobile && npx eas login` (compte Expo, gratuit) puis
+#      `npx eas init` pour lier le projet (ajoute un projectId dans
+#      mobile/app.json sous `extra.eas`).
+#   2. Générer un token d'accès Expo :
+#      https://expo.dev/accounts/[votre-compte]/settings/access-tokens
+#   3. L'ajouter comme secret du dépôt GitHub sous le nom EXPO_TOKEN
+#      (Settings > Secrets and variables > Actions).
+#   4. Si la carte doit fonctionner sur Android, remplacer le placeholder
+#      REMPLACER_PAR_CLE_GOOGLE_MAPS_ANDROID dans mobile/app.json par une
+#      vraie clé Google Maps SDK avant de lancer un build preview/production.
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "Profil de build (voir mobile/eas.json)"
+        required: true
+        default: "preview"
+        type: choice
+        options: ["development", "preview", "production"]
+  push:
+    tags:
+      - "mobile-v*"
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Installer les dépendances
+        working-directory: mobile
+        run: npm install
+
+      - name: Installer eas-cli
+        run: npm install -g eas-cli
+
+      - name: Lancer le build EAS et récupérer l'APK/AAB
+        working-directory: mobile
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          PROFILE="${{ github.event.inputs.profile }}"
+          if [ -z "$PROFILE" ]; then PROFILE="preview"; fi
+
+          eas build --platform android --profile "$PROFILE" --non-interactive --json > build-result.json
+          cat build-result.json
+
+          URL=$(node -e "console.log(JSON.parse(require('fs').readFileSync('build-result.json','utf8'))[0].artifacts.buildUrl)")
+          EXT="apk"
+          if [ "$PROFILE" = "production" ]; then EXT="aab"; fi
+
+          echo "Téléchargement depuis $URL"
+          curl -L "$URL" -o "crimtrack-mobile.$EXT"
+
+      - name: Publier le build comme artefact GitHub Actions
+        uses: actions/upload-artifact@v4
+        with:
+          name: CrimTrack-mobile-android
+          path: mobile/crimtrack-mobile.*
+
+      - name: Publier une Release GitHub (si le build vient d'un tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: mobile/crimtrack-mobile.*
