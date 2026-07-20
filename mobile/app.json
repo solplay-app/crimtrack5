@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "CrimTrack",
-    "slug": "crimtrack-mobile",
+    "slug": "crimtrack",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
@@ -26,6 +26,11 @@
         }
       }
     },
-    "plugins": ["expo-secure-store"]
+    "plugins": ["expo-secure-store"],
+    "extra": {
+      "eas": {
+        "projectId": "66b68626-31ac-453e-8990-f2b281c73dda"
+      }
+    }
   }
 }
