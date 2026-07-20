@@ -105,8 +105,27 @@ async function request(path, opts = {}) {
 }
 
 export const Api = {
-  login: (email, password) =>
-    request("/auth/login", { method: "POST", body: { email, password } }),
+  export const Api = {
+  login: async (email, password) => {
+    const form = new URLSearchParams();
+    form.set("username", email);
+    form.set("password", password);
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: form.toString(),
+    });
+    if (!res.ok) {
+      let detail = "Email ou mot de passe incorrect";
+      try {
+        const b = await res.json();
+        if (typeof b.detail === "string") detail = b.detail;
+      } catch (_) {}
+      throw new ApiError(detail, res.status);
+    }
+    return res.json();
+  },
+
   me: () => request("/auth/me"),
 
   incidents: (query) => request("/incidents", { query }),
