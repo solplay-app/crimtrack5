@@ -7,7 +7,10 @@
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#10141a",
+    "icon": "./assets/icon.png",
     "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
       "backgroundColor": "#10141a"
     },
     "ios": {
@@ -20,6 +23,10 @@
     },
     "android": {
       "package": "org.crimtrack.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#A39A91"
+      },
       "permissions": ["ACCESS_FINE_LOCATION", "CAMERA"],
       "config": {
         "googleMaps": {

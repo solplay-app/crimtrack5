@@ -16,6 +16,14 @@ COPY app ./app
 COPY alembic.ini .
 COPY migrations ./migrations
 
+# Interface web (Module 0) — copiée depuis backend/frontend (une copie du
+# dossier frontend/ du dépôt : le Root Directory Railway étant "backend",
+# Docker ne peut pas voir en dehors de ce dossier, d'où la duplication).
+# CRIMTRACK_FRONTEND_DIR indique au backend de la servir sur "/" (voir
+# app/main.py) au lieu de la simple réponse JSON de santé.
+COPY frontend ./frontend
+ENV CRIMTRACK_FRONTEND_DIR=/app/frontend
+
 EXPOSE 8000
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
