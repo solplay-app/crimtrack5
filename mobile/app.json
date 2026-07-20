@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "CrimTrack",
+    "slug": "crimtrack-mobile",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#10141a",
+    "splash": {
+      "backgroundColor": "#10141a"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "org.crimtrack.mobile",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "CrimTrack utilise votre position pour vous situer sur la carte des incidents et hotspots pendant une intervention.",
+        "NSCameraUsageDescription": "CrimTrack utilise l'appareil photo pour capturer des plaques (ANPR) et des preuves photographiques sur le terrain."
+      }
+    },
+    "android": {
+      "package": "org.crimtrack.mobile",
+      "permissions": ["ACCESS_FINE_LOCATION", "CAMERA"],
+      "config": {
+        "googleMaps": {
+          "apiKey": "REMPLACER_PAR_CLE_GOOGLE_MAPS_ANDROID"
+        }
+      }
+    },
+    "plugins": ["expo-secure-store"]
+  }
+}
