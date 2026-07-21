@@ -104,6 +104,30 @@ async function request(path, opts = {}) {
   return res.json();
 }
 
+async function requestMultipart(path, formData) {
+  const access = await TokenStore.getAccess();
+  const headers = {};
+  if (access) headers.Authorization = `Bearer ${access}`;
+  // Pas de Content-Type manuel : fetch doit poser lui-même le boundary
+  // multipart/form-data, sinon le serveur ne peut plus parser le corps.
+
+  const res = await fetch(`${API_BASE}${path}`, { method: "POST", headers, body: formData });
+
+  if (res.status === 401) {
+    await doRefresh();
+    return requestMultipart(path, formData);
+  }
+  if (!res.ok) {
+    let detail = res.statusText;
+    try {
+      const data = await res.json();
+      detail = data.detail || detail;
+    } catch {}
+    throw new ApiError(detail, res.status);
+  }
+  return res.json();
+}
+
 export const Api = {
   login: async (email, password) => {
     const form = new URLSearchParams();
@@ -130,6 +154,16 @@ export const Api = {
   incidents: (query) => request("/incidents", { query }),
   incident: (id) => request(`/incidents/${id}`),
   hotspots: (query) => request("/incidents/analyse/hotspots", { query }),
+  creerIncident: (payload) => request("/incidents", { method: "POST", body: payload }),
+  ajouterEvenementChronologie: (incidentId, payload) =>
+    request(`/incidents/${incidentId}/chronologie`, { method: "POST", body: payload }),
+
+  creerPreuve: (payload) => request("/preuves", { method: "POST", body: payload }),
+  ajouterPieceJointe: (preuveId, uri) => {
+    const form = new FormData();
+    form.append("fichier", { uri, name: "photo.jpg", type: "image/jpeg" });
+    return requestMultipart(`/preuves/${preuveId}/pieces-jointes`, form);
+  },
 
   personnes: () => request("/personnes"),
   vehicules: () => request("/vehicules"),
@@ -140,6 +174,21 @@ export const Api = {
   relationsGraphe: (query) => request("/relations/graphe", { query }),
 
   lecturesAnpr: (query) => request("/anpr/lectures", { query }),
+
+  // Envoie une photo de plaque (agent terrain) : détection + OCR + rapprochement
+  // véhicules sont faits côté serveur (app/anpr_engine.py) — voir POST
+  // /anpr/lectures/depuis-image dans backend/app/routers/anpr.py.
+  anprDepuisImage: ({ uri, cameraId, latitude, longitude }) => {
+    const form = new FormData();
+    form.append("fichier", { uri, name: "plaque.jpg", type: "image/jpeg" });
+    if (cameraId) form.append("camera_id", cameraId);
+    if (latitude != null) form.append("latitude", String(latitude));
+    if (longitude != null) form.append("longitude", String(longitude));
+    return requestMultipart("/anpr/lectures/depuis-image", form);
+  },
+
+  corrigerLectureAnpr: (lectureId, plaqueLue) =>
+    request(`/anpr/lectures/${lectureId}`, { method: "PATCH", body: { plaque_lue: plaqueLue } }),
 
   systemesNationaux: () => request("/integrations-nationales/systemes"),
 };

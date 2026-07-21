@@ -9,8 +9,10 @@ import { colors } from "./src/theme/tokens";
 import LoginScreen from "./src/screens/LoginScreen";
 import DashboardScreen from "./src/screens/DashboardScreen";
 import IncidentsListScreen from "./src/screens/IncidentsListScreen";
+import NewIncidentScreen from "./src/screens/NewIncidentScreen";
 import IncidentDetailScreen from "./src/screens/IncidentDetailScreen";
 import MapScreen from "./src/screens/MapScreen";
+import AnprScreen from "./src/screens/AnprScreen";
 
 // Contexte session minimal : qui est connecté, et comment se déconnecter.
 // Un vrai store (zustand/redux) vaut le coup dès que l'app dépasse ce
@@ -63,8 +65,10 @@ export default function App() {
             <>
               <Stack.Screen name="Tableau de bord" component={DashboardScreen} />
               <Stack.Screen name="Incidents" component={IncidentsListScreen} />
+              <Stack.Screen name="Nouvel incident" component={NewIncidentScreen} />
               <Stack.Screen name="Détail incident" component={IncidentDetailScreen} />
               <Stack.Screen name="Carte" component={MapScreen} />
+              <Stack.Screen name="ANPR" component={AnprScreen} />
             </>
           )}
         </Stack.Navigator>

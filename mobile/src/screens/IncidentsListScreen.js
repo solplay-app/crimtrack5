@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, StyleSheet, FlatList, Pressable, ActivityIndicator } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 
 import { Api } from "../api";
 import { colors, radius, graviteColor } from "../theme/tokens";
@@ -8,11 +9,30 @@ export default function IncidentsListScreen({ navigation }) {
   const [incidents, setIncidents] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const load = useCallback(() => {
     Api.incidents()
       .then((data) => setIncidents(Array.isArray(data) ? data : data.items || []))
       .finally(() => setLoading(false));
   }, []);
+
+  // Recharge à chaque retour sur cet écran (ex. après avoir créé un
+  // incident) — un simple useEffect au montage ne suffirait pas, la liste
+  // resterait périmée tant que l'écran n'est pas complètement redémonté.
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load])
+  );
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Pressable onPress={() => navigation.navigate("Nouvel incident")} hitSlop={12}>
+          <Text style={styles.addButton}>＋</Text>
+        </Pressable>
+      ),
+    });
+  }, [navigation]);
 
   if (loading) {
     return (
@@ -44,6 +64,7 @@ export default function IncidentsListScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
+  addButton: { color: colors.seal, fontSize: 26, fontWeight: "600", paddingHorizontal: 4 },
   screen: { flex: 1, backgroundColor: colors.ink },
   center: { flex: 1, backgroundColor: colors.ink, justifyContent: "center", alignItems: "center" },
   muted: { color: colors.textFaint, textAlign: "center", marginTop: 40 },

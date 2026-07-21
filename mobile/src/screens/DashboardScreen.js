@@ -43,10 +43,14 @@ export default function DashboardScreen({ navigation }) {
         <Text style={styles.greeting}>Bonjour {user?.prenom || ""}</Text>
         <Text style={styles.role}>{user?.role}</Text>
 
+        <Pressable style={styles.newIncidentBtn} onPress={() => navigation.navigate("Nouvel incident")}>
+          <Text style={styles.newIncidentBtnText}>＋ Nouvel incident</Text>
+        </Pressable>
+
         <View style={styles.quickActions}>
           <QuickAction label="Incidents" onPress={() => navigation.navigate("Incidents")} />
           <QuickAction label="Carte" onPress={() => navigation.navigate("Carte")} />
-          <QuickAction label="ANPR" onPress={() => {}} note="à venir" />
+          <QuickAction label="ANPR" onPress={() => navigation.navigate("ANPR")} />
         </View>
 
         <Text style={styles.sectionTitle}>Incidents récents</Text>
@@ -90,6 +94,8 @@ const styles = StyleSheet.create({
   greeting: { color: colors.text, fontSize: 24, fontWeight: "600" },
   role: { color: colors.textFaint, fontSize: 11, textTransform: "uppercase", letterSpacing: 1, marginTop: 4 },
   quickActions: { flexDirection: "row", gap: 10, marginTop: 24 },
+  newIncidentBtn: { backgroundColor: colors.seal, borderRadius: radius, padding: 16, alignItems: "center", marginTop: 24 },
+  newIncidentBtnText: { color: colors.text, fontWeight: "700", fontSize: 15 },
   quickAction: { flex: 1, backgroundColor: colors.panel, borderWidth: 1, borderColor: colors.border, borderRadius: radius, padding: 14, alignItems: "center" },
   quickActionLabel: { color: colors.text, fontWeight: "600" },
   quickActionNote: { color: colors.textFaint, fontSize: 10, marginTop: 4 },
