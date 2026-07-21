@@ -105,7 +105,6 @@ async function request(path, opts = {}) {
 }
 
 export const Api = {
-  export const Api = {
   login: async (email, password) => {
     const form = new URLSearchParams();
     form.set("username", email);
