@@ -37,17 +37,7 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
-# --- AVANT (à remplacer) ---
-# origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")]
-
-# --- APRÈS (remplace par ceci) ---
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Permet à n'importe quelle adresse IP/domaine de se connecter
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")]
 
 app.add_middleware(
     CORSMiddleware,
