@@ -15,8 +15,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app ./app
 COPY alembic.ini .
 COPY migrations ./migrations
-COPY entrypoint.sh ./entrypoint.sh
-RUN chmod +x /app/entrypoint.sh
 
 # Interface web (Module 0) — copiée depuis backend/frontend (une copie du
 # dossier frontend/ du dépôt : le Root Directory Railway étant "backend",
@@ -28,4 +26,4 @@ ENV CRIMTRACK_FRONTEND_DIR=/app/frontend
 
 EXPOSE 8000
 
-CMD ["/app/entrypoint.sh"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

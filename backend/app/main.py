@@ -22,11 +22,10 @@ from .routers import (
     vehicules,
 )
 
-# En local, on peut créer les tables automatiquement pour démarrer vite.
-# En production (surtout avec PostgreSQL séparé), il vaut mieux désactiver
-# ce comportement et laisser Alembic piloter le schéma.
-if os.getenv("AUTO_CREATE_TABLES", "true").lower() == "true":
-    Base.metadata.create_all(bind=engine)
+# Crée les tables si elles n'existent pas encore. Pratique pour un premier
+# démarrage local, mais toute évolution de schéma ultérieure doit passer
+# par Alembic (voir migrations/ et README) plutôt que par create_all.
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="CrimTrack API",

@@ -34,7 +34,7 @@
         }
       }
     },
-    "plugins": ["expo-secure-store", "expo-image-picker", "expo-location", "expo-camera"],
+    "plugins": ["expo-secure-store", "expo-image-picker", "expo-location"],
     "extra": {
       "eas": {
         "projectId": "66b68626-31ac-453e-8990-f2b281c73dda"
