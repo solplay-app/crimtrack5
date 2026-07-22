@@ -228,6 +228,11 @@ class LectureAnpr(Base):
     longitude = Column(Float, nullable=True)
     camera_id = Column(String, nullable=True)
     confiance_ocr = Column(Float, nullable=True)
+    # Identifiant idempotent fourni par le client mobile. Permet à l'app
+    # terrain de rejouer une lecture mise en file d'attente hors ligne sans
+    # créer de doublon si le même enregistrement est renvoyé après un échec
+    # réseau ou un timeout côté client.
+    client_uid = Column(String, nullable=True, unique=True, index=True)
     vehicule_id = Column(String, ForeignKey("vehicules.id"), nullable=True)
 
     # Source de la lecture : "manuel" (plaque saisie/transmise déjà décodée,

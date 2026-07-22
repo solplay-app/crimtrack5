@@ -10,7 +10,7 @@ from datetime import datetime
 from io import BytesIO
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
@@ -20,6 +20,45 @@ from ..database import get_db
 router = APIRouter(prefix="/anpr", tags=["anpr"], dependencies=[Depends(auth.get_current_user)])
 
 STATUTS_ALERTE = {"signalé", "signale", "volé", "vole"}
+
+
+def _rapprocher(db: Session, plaque_lue: str) -> Optional[models.Vehicule]:
+    return (
+        db.query(models.Vehicule)
+        .filter(models.Vehicule.plaque_immatriculation == plaque_lue)
+        .first()
+    )
+
+
+def _statut_alerte(vehicule: Optional[models.Vehicule]) -> tuple:
+    if vehicule and vehicule.statut and vehicule.statut.lower() in STATUTS_ALERTE:
+        return True, f"Véhicule {vehicule.plaque_immatriculation} au statut '{vehicule.statut}'"
+    return False, None
+
+
+def _resultat_lecture(db: Session, lecture: models.LectureAnpr) -> schemas.LectureAnprResult:
+    vehicule = lecture.vehicule or _rapprocher(db, lecture.plaque_lue)
+    alerte, motif_alerte = _statut_alerte(vehicule)
+    return schemas.LectureAnprResult(
+        lecture=lecture,
+        vehicule_reconnu=vehicule,
+        alerte=alerte,
+        motif_alerte=motif_alerte,
+    )
+
+
+def _journaliser_lecture(db, request, current_user, lecture, alerte, motif_alerte):
+    audit.log(
+        db,
+        user=current_user,
+        action="creation",
+        ressource_type="lecture_anpr",
+        ressource_id=lecture.id,
+        details=(
+            f"Plaque {lecture.plaque_lue} — ALERTE ({motif_alerte})" if alerte else f"Plaque {lecture.plaque_lue}"
+        ),
+        request=request,
+    )
 
 
 @router.get("/lectures", response_model=List[schemas.LectureAnprOut])
@@ -45,34 +84,6 @@ def get_lecture(lecture_id: str, db: Session = Depends(get_db)):
     return lecture
 
 
-def _rapprocher(db: Session, plaque_lue: str) -> Optional[models.Vehicule]:
-    return (
-        db.query(models.Vehicule)
-        .filter(models.Vehicule.plaque_immatriculation == plaque_lue)
-        .first()
-    )
-
-
-def _statut_alerte(vehicule: Optional[models.Vehicule]) -> tuple:
-    if vehicule and vehicule.statut and vehicule.statut.lower() in STATUTS_ALERTE:
-        return True, f"Véhicule {vehicule.plaque_immatriculation} au statut '{vehicule.statut}'"
-    return False, None
-
-
-def _journaliser_lecture(db, request, current_user, lecture, alerte, motif_alerte):
-    audit.log(
-        db,
-        user=current_user,
-        action="creation",
-        ressource_type="lecture_anpr",
-        ressource_id=lecture.id,
-        details=(
-            f"Plaque {lecture.plaque_lue} — ALERTE ({motif_alerte})" if alerte else f"Plaque {lecture.plaque_lue}"
-        ),
-        request=request,
-    )
-
-
 @router.post("/lectures", response_model=schemas.LectureAnprResult, status_code=201)
 def create_lecture(
     payload: schemas.LectureAnprCreate,
@@ -88,6 +99,11 @@ def create_lecture(
     Réservé aux plaques déjà décodées en amont (saisie manuelle ou moteur
     OCR tiers). Pour une image brute, voir `POST /anpr/lectures/depuis-image`.
     """
+    if payload.client_uid:
+        existante = db.query(models.LectureAnpr).filter(models.LectureAnpr.client_uid == payload.client_uid).first()
+        if existante:
+            return _resultat_lecture(db, existante)
+
     vehicule = _rapprocher(db, payload.plaque_lue)
 
     lecture = models.LectureAnpr(
@@ -97,6 +113,7 @@ def create_lecture(
         longitude=payload.longitude,
         camera_id=payload.camera_id,
         confiance_ocr=payload.confiance_ocr,
+        client_uid=payload.client_uid,
         vehicule_id=vehicule.id if vehicule else None,
         source="manuel",
     )
@@ -107,12 +124,7 @@ def create_lecture(
     alerte, motif_alerte = _statut_alerte(vehicule)
     _journaliser_lecture(db, request, current_user, lecture, alerte, motif_alerte)
 
-    return schemas.LectureAnprResult(
-        lecture=lecture,
-        vehicule_reconnu=vehicule,
-        alerte=alerte,
-        motif_alerte=motif_alerte,
-    )
+    return _resultat_lecture(db, lecture)
 
 
 @router.post("/lectures/depuis-image", response_model=schemas.DetectionAnprResult, status_code=201)
@@ -120,9 +132,10 @@ def create_lecture_depuis_image(
     request: Request,
     db: Session = Depends(get_db),
     fichier: UploadFile = File(...),
-    camera_id: Optional[str] = None,
-    latitude: Optional[float] = None,
-    longitude: Optional[float] = None,
+    camera_id: Optional[str] = Form(None),
+    latitude: Optional[float] = Form(None),
+    longitude: Optional[float] = Form(None),
+    client_uid: Optional[str] = Form(None),
     current_user: models.Utilisateur = Depends(auth.require_write),
 ):
     """Détecte et lit une plaque directement depuis une image téléversée
@@ -139,6 +152,18 @@ def create_lecture_depuis_image(
     (mêmes garanties d'intégrité que les pièces jointes, `app/storage.py`)
     pour permettre une revérification a posteriori.
     """
+    if client_uid:
+        existante = db.query(models.LectureAnpr).filter(models.LectureAnpr.client_uid == client_uid).first()
+        if existante:
+            resultat = _resultat_lecture(db, existante)
+            return schemas.DetectionAnprResult(
+                lecture=resultat.lecture,
+                vehicule_reconnu=resultat.vehicule_reconnu,
+                alerte=resultat.alerte,
+                motif_alerte=resultat.motif_alerte,
+                candidats=[],
+            )
+
     content_type = fichier.content_type or "application/octet-stream"
     try:
         chemin_stockage, hash_sha256, _taille = storage.save_upload(fichier.file, content_type=content_type)
@@ -172,6 +197,7 @@ def create_lecture_depuis_image(
         longitude=longitude,
         camera_id=camera_id,
         confiance_ocr=meilleur.confiance,
+        client_uid=client_uid,
         vehicule_id=vehicule.id if vehicule else None,
         source="image",
         image_chemin=chemin_stockage,
@@ -203,11 +229,12 @@ def create_lectures_depuis_video(
     request: Request,
     db: Session = Depends(get_db),
     fichier: Optional[UploadFile] = File(None),
-    url_flux: Optional[str] = None,
-    camera_id: Optional[str] = None,
-    latitude: Optional[float] = None,
-    longitude: Optional[float] = None,
-    intervalle_secondes: float = 1.0,
+    url_flux: Optional[str] = Form(None),
+    camera_id: Optional[str] = Form(None),
+    latitude: Optional[float] = Form(None),
+    longitude: Optional[float] = Form(None),
+    intervalle_secondes: float = Form(1.0),
+    client_uid: Optional[str] = Form(None),
     current_user: models.Utilisateur = Depends(auth.require_write),
 ):
     """Détecte et lit les plaques présentes sur une vidéo téléversée ou sur
@@ -229,6 +256,24 @@ def create_lectures_depuis_video(
     dans la vidéo et la frame correspondante comme image source (mêmes
     rapprochement et alerte que pour une lecture manuelle/image).
     """
+    if client_uid:
+        existante = db.query(models.LectureAnpr).filter(models.LectureAnpr.client_uid == client_uid).first()
+        if existante:
+            resultat = _resultat_lecture(db, existante)
+            return schemas.DetectionAnprVideoResult(
+                lectures=[
+                    schemas.LectureVideoItem(
+                        lecture=resultat.lecture,
+                        vehicule_reconnu=resultat.vehicule_reconnu,
+                        alerte=resultat.alerte,
+                        motif_alerte=resultat.motif_alerte,
+                        timestamp_s=existante.video_timestamp_s or 0.0,
+                    )
+                ],
+                frames_analysees=0,
+                duree_video_s=None,
+            )
+
     if bool(fichier) == bool(url_flux):
         raise HTTPException(
             status_code=422,
@@ -246,9 +291,6 @@ def create_lectures_depuis_video(
             raise HTTPException(status_code=413, detail=str(exc))
         source_cv2 = str(storage.resolve_path(video_chemin_stockage))
     else:
-        # Flux caméra en direct : lu directement par OpenCV (RTSP/HTTP),
-        # jamais écrit sur disque tel quel — ce n'est pas un fichier
-        # téléversé mais une source réseau externe.
         source_cv2 = url_flux
 
     try:
@@ -277,7 +319,7 @@ def create_lectures_depuis_video(
                     BytesIO(det.frame_jpeg), content_type="image/jpeg"
                 )
             except (storage.TypeFichierNonAutorise, storage.FichierTropVolumineux):
-                pass  # la lecture reste valable même sans frame de référence conservée
+                pass
 
         vehicule = _rapprocher(db, det.texte)
         lecture = models.LectureAnpr(
@@ -287,6 +329,7 @@ def create_lectures_depuis_video(
             longitude=longitude,
             camera_id=camera_id,
             confiance_ocr=det.confiance,
+            client_uid=client_uid if len(resultat.lectures) == 1 else None,
             vehicule_id=vehicule.id if vehicule else None,
             source="video",
             image_chemin=image_chemin,
@@ -380,7 +423,6 @@ def corriger_lecture(
     db.commit()
     db.refresh(lecture)
 
-    alerte, motif_alerte = _statut_alerte(vehicule)
     audit.log(
         db,
         user=current_user,
@@ -391,9 +433,4 @@ def corriger_lecture(
         request=request,
     )
 
-    return schemas.LectureAnprResult(
-        lecture=lecture,
-        vehicule_reconnu=vehicule,
-        alerte=alerte,
-        motif_alerte=motif_alerte,
-    )
+    return _resultat_lecture(db, lecture)

@@ -252,6 +252,7 @@ class LectureAnprCreate(BaseModel):
     longitude: Optional[float] = None
     camera_id: Optional[str] = None
     confiance_ocr: Optional[float] = None
+    client_uid: Optional[str] = None
 
 
 class LectureAnprOut(BaseModel):
@@ -263,6 +264,7 @@ class LectureAnprOut(BaseModel):
     longitude: Optional[float] = None
     camera_id: Optional[str] = None
     confiance_ocr: Optional[float] = None
+    client_uid: Optional[str] = None
     vehicule_id: Optional[str] = None
     source: str = "manuel"
     image_chemin: Optional[str] = None

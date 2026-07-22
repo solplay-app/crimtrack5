@@ -178,12 +178,13 @@ export const Api = {
   // Envoie une photo de plaque (agent terrain) : détection + OCR + rapprochement
   // véhicules sont faits côté serveur (app/anpr_engine.py) — voir POST
   // /anpr/lectures/depuis-image dans backend/app/routers/anpr.py.
-  anprDepuisImage: ({ uri, cameraId, latitude, longitude }) => {
+  anprDepuisImage: ({ uri, cameraId, latitude, longitude, clientUid }) => {
     const form = new FormData();
     form.append("fichier", { uri, name: "plaque.jpg", type: "image/jpeg" });
     if (cameraId) form.append("camera_id", cameraId);
     if (latitude != null) form.append("latitude", String(latitude));
     if (longitude != null) form.append("longitude", String(longitude));
+    if (clientUid) form.append("client_uid", clientUid);
     return requestMultipart("/anpr/lectures/depuis-image", form);
   },
 

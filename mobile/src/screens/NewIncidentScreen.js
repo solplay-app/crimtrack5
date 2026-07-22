@@ -69,6 +69,7 @@ export default function NewIncidentScreen({ navigation }) {
     // L'incident existe déjà à partir d'ici : on continue du mieux possible
     // et on prévient l'agent au lieu de faire comme si rien n'avait été créé.
     const echecs = [];
+    const detailsEchecs = [];
 
     if (description.trim()) {
       try {
@@ -77,8 +78,9 @@ export default function NewIncidentScreen({ navigation }) {
           titre: "Rapport initial (terrain)",
           description: description.trim(),
         });
-      } catch {
+      } catch (e) {
         echecs.push("la description");
+        detailsEchecs.push(`Description : ${e instanceof ApiError ? e.message : "erreur inconnue"}`);
       }
     }
 
@@ -90,8 +92,9 @@ export default function NewIncidentScreen({ navigation }) {
           description: "Photo prise sur le terrain",
         });
         await Api.ajouterPieceJointe(preuve.id, photo.uri);
-      } catch {
+      } catch (e) {
         echecs.push("la photo");
+        detailsEchecs.push(`Photo : ${e instanceof ApiError ? e.message : "erreur inconnue"}`);
       }
     }
 
@@ -100,7 +103,7 @@ export default function NewIncidentScreen({ navigation }) {
     if (echecs.length > 0) {
       Alert.alert(
         "Incident créé, mais...",
-        `L'incident a bien été enregistré, mais l'envoi de ${echecs.join(" et de ")} a échoué. Tu peux les ajouter depuis la fiche de l'incident.`,
+        `L'incident a bien été enregistré, mais l'envoi de ${echecs.join(" et de ")} a échoué.\n\n${detailsEchecs.join("\n")}\n\nTu peux les ajouter depuis la fiche de l'incident.`,
         [{ text: "Voir l'incident", onPress: () => navigation.replace("Détail incident", { id: incident.id }) }]
       );
       return;
