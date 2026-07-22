@@ -37,7 +37,17 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 app.add_middleware(SlowAPIMiddleware)
 
-origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")]
+# --- AVANT (à remplacer) ---
+# origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")]
+
+# --- APRÈS (remplace par ceci) ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Permet à n'importe quelle adresse IP/domaine de se connecter
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -86,3 +96,10 @@ else:
     @app.get("/", tags=["health"])
     def health_root():
         return {"status": "ok", "service": "crimtrack-api"}
+
+if __name__ == "__main__":
+    import uvicorn
+    # Récupère le port fourni par l'hébergeur cloud (ex: Railway/Render) ou prend 8000
+    port = int(os.getenv("PORT", 8000))
+    # '0.0.0.0' est OBLIGATOIRE pour écouter les requêtes externes
+    uvicorn.run("app.main:app", host="0.0.0.0", port=port, reload=False)
