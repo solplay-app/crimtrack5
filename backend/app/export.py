@@ -1,9 +1,9 @@
-"""Export CSV / PDF réutilisable par les différents modules.
+"""Export CSV / PDF rÃ©utilisable par les diffÃ©rents modules.
 
-- CSV : simple, standard, consommable par n'importe quel tableur ou système
-  tiers (cahier des charges, exigence non fonctionnelle "Interopérabilité").
-- PDF : mise en page présentable, adaptée à une pièce versée à une procédure
-  judiciaire (Module 2) ou à un rapport imprimable (Module 1).
+- CSV : simple, standard, consommable par n'importe quel tableur ou systÃ¨me
+  tiers (cahier des charges, exigence non fonctionnelle "InteropÃ©rabilitÃ©").
+- PDF : mise en page prÃ©sentable, adaptÃ©e Ã  une piÃ¨ce versÃ©e Ã  une procÃ©dure
+  judiciaire (Module 2) ou Ã  un rapport imprimable (Module 1).
 """
 
 import csv
@@ -26,25 +26,25 @@ from reportlab.platypus import (
     TableStyle,
 )
 
-# Mêmes couleurs que la carte Leaflet du frontend (GRAVITE_COLORS dans
-# app.js), pour que le rapport imprimé et l'écran restent cohérents.
+# MÃªmes couleurs que la carte Leaflet du frontend (GRAVITE_COLORS dans
+# app.js), pour que le rapport imprimÃ© et l'Ã©cran restent cohÃ©rents.
 GRAVITE_COLORS_PDF = {
     "faible": colors.HexColor("#5b8c5a"),
     "moyenne": colors.HexColor("#c2703d"),
     "eleve": colors.HexColor("#bd4d3f"),
-    "élevé": colors.HexColor("#bd4d3f"),
+    "Ã©levÃ©": colors.HexColor("#bd4d3f"),
     "critique": colors.HexColor("#8a1f1f"),
 }
 _DEFAULT_POINT_COLOR = colors.HexColor("#5578c9")
 
-# Logo affiché en en-tête de chaque PDF exporté (Module 0 — identité
-# visuelle du projet). Déposer le fichier dans backend/app/assets/logo.png.
-# Si le fichier est absent, l'en-tête se génère quand même, sans logo.
+# Logo affichÃ© en en-tÃªte de chaque PDF exportÃ© (Module 0 â€” identitÃ©
+# visuelle du projet). DÃ©poser le fichier dans backend/app/assets/logo.png.
+# Si le fichier est absent, l'en-tÃªte se gÃ©nÃ¨re quand mÃªme, sans logo.
 LOGO_PATH = os.path.join(os.path.dirname(__file__), "assets", "logo.png")
 
 
 def rows_to_csv(headers: Sequence[str], rows: Iterable[Sequence]) -> io.BytesIO:
-    """Construit un CSV en mémoire (UTF-8 avec BOM pour un Excel FR sans souci d'accents)."""
+    """Construit un CSV en mÃ©moire (UTF-8 avec BOM pour un Excel FR sans souci d'accents)."""
     buffer = io.StringIO()
     writer = csv.writer(buffer, delimiter=";")
     writer.writerow(headers)
@@ -58,9 +58,9 @@ def rows_to_csv(headers: Sequence[str], rows: Iterable[Sequence]) -> io.BytesIO:
 
 
 def _en_tete(elements, styles, titre, sous_titre, genere_par):
-    """En-tête commun (logo + nom du projet + titre) — réutilisé par
-    build_pdf_report et build_map_pdf_report pour que tous les PDF exportés
-    partagent la même identité visuelle (logo + bandeau CrimTrack)."""
+    """En-tÃªte commun (logo + nom du projet + titre) â€” rÃ©utilisÃ© par
+    build_pdf_report et build_map_pdf_report pour que tous les PDF exportÃ©s
+    partagent la mÃªme identitÃ© visuelle (logo + bandeau CrimTrack)."""
     if os.path.isfile(LOGO_PATH):
         elements.append(Image(LOGO_PATH, width=2.5 * cm, height=2.5 * cm))
         elements.append(Spacer(1, 0.2 * cm))
@@ -68,7 +68,7 @@ def _en_tete(elements, styles, titre, sous_titre, genere_par):
     elements.append(Paragraph(titre, styles["Title"]))
     if sous_titre:
         elements.append(Paragraph(sous_titre, styles["Normal"]))
-    meta = f"Généré le {datetime.utcnow().strftime('%d/%m/%Y %H:%M UTC')}"
+    meta = f"GÃ©nÃ©rÃ© le {datetime.utcnow().strftime('%d/%m/%Y %H:%M UTC')}"
     if genere_par:
         meta += f" par {genere_par}"
     elements.append(Paragraph(meta, styles["Normal"]))
@@ -84,10 +84,10 @@ def build_pdf_report(
     genere_par: str = "",
     notes: str = "",
 ) -> io.BytesIO:
-    """Génère un PDF tabulaire simple (rapport / pièce de procédure).
+    """GÃ©nÃ¨re un PDF tabulaire simple (rapport / piÃ¨ce de procÃ©dure).
 
-    Volontairement générique : utilisé aussi bien pour un export d'incidents
-    (Module 1) que pour l'historique d'une chaîne de custody (Module 2).
+    Volontairement gÃ©nÃ©rique : utilisÃ© aussi bien pour un export d'incidents
+    (Module 1) que pour l'historique d'une chaÃ®ne de custody (Module 2).
     """
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
@@ -129,15 +129,15 @@ def build_pdf_report(
 
 
 class MapPlot(Flowable):
-    """Rendu schématique d'une carte (projection équirectangulaire simple,
-    suffisante à l'échelle d'un briefing d'unité — pas de fond de plan
-    OpenStreetMap embarqué dans un PDF généré côté serveur sans navigateur).
+    """Rendu schÃ©matique d'une carte (projection Ã©quirectangulaire simple,
+    suffisante Ã  l'Ã©chelle d'un briefing d'unitÃ© â€” pas de fond de plan
+    OpenStreetMap embarquÃ© dans un PDF gÃ©nÃ©rÃ© cÃ´tÃ© serveur sans navigateur).
 
-    Dessine les incidents en points colorés par gravité et les hotspots en
-    cercles semi-transparents, avec une grille de repère et un cadre. Comble
-    l'écart signalé sur `/incidents/export/pdf`, qui ne produisait qu'un
+    Dessine les incidents en points colorÃ©s par gravitÃ© et les hotspots en
+    cercles semi-transparents, avec une grille de repÃ¨re et un cadre. Comble
+    l'Ã©cart signalÃ© sur `/incidents/export/pdf`, qui ne produisait qu'un
     tableau et pas une carte (cahier des charges 3.1 : "Export de rapports
-    cartographiques pour les briefings d'unité").
+    cartographiques pour les briefings d'unitÃ©").
     """
 
     def __init__(self, incidents, hotspots, width=17 * cm, height=13 * cm):
@@ -157,7 +157,7 @@ class MapPlot(Flowable):
             lats.append(h.latitude)
             lons.append(h.longitude)
         if not lats:
-            return (48.80, 48.92, 2.25, 2.45)  # repli : région parisienne
+            return (48.80, 48.92, 2.25, 2.45)  # repli : rÃ©gion parisienne
         pad_lat = max((max(lats) - min(lats)) * 0.12, 0.01)
         pad_lon = max((max(lons) - min(lons)) * 0.12, 0.01)
         return (min(lats) - pad_lat, max(lats) + pad_lat, min(lons) - pad_lon, max(lons) + pad_lon)
@@ -173,7 +173,7 @@ class MapPlot(Flowable):
             y = (lat - lat_min) / lat_span * self.height
             return x, y
 
-        # Cadre + grille de repère (pas de tuiles de fond, cf. docstring).
+        # Cadre + grille de repÃ¨re (pas de tuiles de fond, cf. docstring).
         c.setStrokeColor(colors.HexColor("#c9c9c9"))
         c.setFillColor(colors.HexColor("#fbfbfb"))
         c.rect(0, 0, self.width, self.height, stroke=1, fill=1)
@@ -181,7 +181,7 @@ class MapPlot(Flowable):
             c.line(0, self.height * i / 4, self.width, self.height * i / 4)
             c.line(self.width * i / 4, 0, self.width * i / 4, self.height)
 
-        # Hotspots : cercles semi-transparents dessinés sous les points.
+        # Hotspots : cercles semi-transparents dessinÃ©s sous les points.
         c.setFillColor(colors.HexColor("#c2703d"))
         for h in self.hotspots:
             x, y = project(h.latitude, h.longitude)
@@ -192,7 +192,7 @@ class MapPlot(Flowable):
             c.circle(x, y, r, stroke=1, fill=1)
             c.restoreState()
 
-        # Incidents : points colorés par gravité.
+        # Incidents : points colorÃ©s par gravitÃ©.
         for inc in self.incidents:
             if inc.latitude is None or inc.longitude is None:
                 continue
@@ -213,8 +213,8 @@ def build_map_pdf_report(
     genere_par: str = "",
 ) -> io.BytesIO:
     """Rapport cartographique imprimable (Module 1) : carte des incidents +
-    hotspots, suivie du détail tabulaire — distinct de `build_pdf_report`,
-    qui reste utilisé pour les exports purement tabulaires (Module 2 etc.).
+    hotspots, suivie du dÃ©tail tabulaire â€” distinct de `build_pdf_report`,
+    qui reste utilisÃ© pour les exports purement tabulaires (Module 2 etc.).
     """
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
@@ -232,14 +232,14 @@ def build_map_pdf_report(
 
     elements.append(MapPlot(incidents, hotspots))
     legende = (
-        "Points colorés par gravité (vert = faible, orange = moyenne/élevée, rouge foncé = critique) "
-        f"— {len(hotspots)} hotspot(s) détecté(s), cercles orange proportionnels au nombre d'incidents."
+        "Points colorÃ©s par gravitÃ© (vert = faible, orange = moyenne/Ã©levÃ©e, rouge foncÃ© = critique) "
+        f"â€” {len(hotspots)} hotspot(s) dÃ©tectÃ©(s), cercles orange proportionnels au nombre d'incidents."
     )
     elements.append(Spacer(1, 0.25 * cm))
     elements.append(Paragraph(legende, styles["Italic"]))
     elements.append(Spacer(1, 0.6 * cm))
 
-    headers = ["Type", "Date/heure", "Statut", "Gravité", "Adresse", "Unité"]
+    headers = ["Type", "Date/heure", "Statut", "GravitÃ©", "Adresse", "UnitÃ©"]
     rows = [
         [i.type_infraction, i.date_heure.strftime("%d/%m/%Y %H:%M") if i.date_heure else "", i.statut,
          i.gravite, i.adresse or "", i.unite_en_charge or ""]
