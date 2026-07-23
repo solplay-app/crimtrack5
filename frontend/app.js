@@ -909,7 +909,7 @@ function IncidentDetailPage({ id }) {
 function PersonnesPage() {
   const auth = useAuth();
   const [rows, setRows] = useState(null);
-  const load = useCallback(() => Api.listPersonnes().then(setRows).catch((e) => { notifyError(e); setRows([]); }), []);
+  const load = useCallback(() => { Api.listPersonnes().then(setRows).catch((e) => { notifyError(e); setRows([]); }); }, []);
   useEffect(load, [load]);
 
   return html`
@@ -949,7 +949,7 @@ function PersonnesPage() {
 function VehiculesPage() {
   const auth = useAuth();
   const [rows, setRows] = useState(null);
-  const load = useCallback(() => Api.listVehicules().then(setRows).catch((e) => { notifyError(e); setRows([]); }), []);
+  const load = useCallback(() => { Api.listVehicules().then(setRows).catch((e) => { notifyError(e); setRows([]); }); }, []);
   useEffect(load, [load]);
 
   return html`
@@ -1168,7 +1168,7 @@ function RelationsPage() {
   const [cheminResult, setCheminResult] = useState(null);
   const [cheminBusy, setCheminBusy] = useState(false);
 
-  const load = useCallback(() => Api.listRelations().then(setRows).catch((e) => { notifyError(e); setRows([]); }), []);
+  const load = useCallback(() => { Api.listRelations().then(setRows).catch((e) => { notifyError(e); setRows([]); }); }, []);
   useEffect(load, [load]);
 
   const loadGraphe = useCallback(() => {
@@ -1464,7 +1464,7 @@ function AnprVideoPanel({ onDetected }) {
 function AnprPage() {
   const auth = useAuth();
   const [rows, setRows] = useState(null);
-  const load = useCallback(() => Api.listLectures().then(setRows).catch((e) => { notifyError(e); setRows([]); }), []);
+  const load = useCallback(() => { Api.listLectures().then(setRows).catch((e) => { notifyError(e); setRows([]); }); }, []);
   useEffect(load, [load]);
 
   const canWrite = hasRole(auth.user, WRITE_ROLES);
@@ -1654,7 +1654,7 @@ function RgpdPage() {
 // ---------------------------------------------------------------------------
 function UsersPage() {
   const [rows, setRows] = useState(null);
-  const load = useCallback(() => Api.listUsers().then(setRows).catch((e) => { notifyError(e); setRows([]); }), []);
+  const load = useCallback(() => { Api.listUsers().then(setRows).catch((e) => { notifyError(e); setRows([]); }); }, []);
   useEffect(load, [load]);
 
   return html`
